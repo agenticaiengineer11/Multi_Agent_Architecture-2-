@@ -1,0 +1,28 @@
+# Core LangChain
+langchain
+langchain-core
+langchain-community
+langchain-groq
+langchain-text-splitters
+
+# LangGraph
+langgraph
+
+# Web Search
+tavily-python
+
+# RAG / PDF
+pypdf
+langchain-huggingface
+langchain-chroma
+chromadb
+sentence-transformers
+
+# Data / Coding Agent
+pandas
+
+# Environment variables
+python-dotenv
+
+# Utilities
+requests
