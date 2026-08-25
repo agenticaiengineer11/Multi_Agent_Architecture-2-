@@ -21,7 +21,7 @@ load_dotenv(
 # ============================================================
 
 model = ChatGroq(
-    model="openai/gpt-oss-120b",
+    model="whisper-large-v3",
     temperature=0,
 )
 

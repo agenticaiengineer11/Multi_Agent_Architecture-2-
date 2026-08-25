@@ -2,8 +2,108 @@ from typing import Any, Dict
 from agents.web_search_agent import run_web_search_agent
 from agents.coding_agent import create_coding_agent
 from agents.rag_agent import run_rag_agent
+from pathlib import Path
+
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+load_dotenv(
+    Path(__file__).resolve().parents[1] / ".env"
+)
+router_model = ChatGroq(
+    model="openai/gpt-oss-120b",
+    temperature=0,
+)
 
 from graph.state import AgentState
+
+# ============================================================
+# ROUTER NODE
+# ============================================================
+
+def router_node(state: AgentState) -> Dict[str, Any]:
+    """
+    Determine which specialized agent should handle
+    the user's request.
+
+    Possible routes:
+
+        - rag
+        - coding
+        - web_search
+    """
+
+    query = state.get("user_query", "").strip()
+
+    if not query:
+        return {
+            "selected_agent": "",
+            "error": "User query cannot be empty.",
+            "success": False,
+        }
+
+    prompt = f"""
+You are the routing system of a professional Multi-Agent AI system.
+
+Your job is to select the ONE specialized agent that should
+handle the user's request.
+
+Available agents:
+
+1. rag
+   Use when the question requires information from the
+   provided University PDF/document.
+
+2. coding
+   Use when the user wants to create, modify, debug,
+   explain, or generate software/code.
+
+3. web_search
+   Use when the user needs current, external, online,
+   or web-based information.
+
+USER QUERY:
+
+{query}
+
+Return ONLY one of these exact values:
+
+rag
+coding
+web_search
+"""
+
+    try:
+
+        response = router_model.invoke(prompt)
+
+        route = response.content.strip().lower()
+
+        if route not in {
+            "rag",
+            "coding",
+            "web_search",
+        }:
+            return {
+                "selected_agent": "",
+                "error": (
+                    f"Router returned invalid route: {route}"
+                ),
+                "success": False,
+            }
+
+        return {
+            "selected_agent": route,
+            "success": True,
+        }
+
+    except Exception as error:
+
+        return {
+            "selected_agent": "",
+            "error": str(error),
+            "errors": [str(error)],
+            "success": False,
+        }
 
 
 def rag_node(state: AgentState) -> Dict[str, Any]:
