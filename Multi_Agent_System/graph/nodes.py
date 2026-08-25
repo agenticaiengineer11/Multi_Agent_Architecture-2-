@@ -1,5 +1,5 @@
 from typing import Any, Dict
-
+from agents.web_search_agent import run_web_search_agent
 from agents.coding_agent import create_coding_agent
 from agents.rag_agent import run_rag_agent
 
@@ -98,9 +98,6 @@ def coding_node(
 def web_search_node(state: AgentState) -> Dict[str, Any]:
     """
     Execute the Web Search Agent.
-
-    This node will connect to the existing Web Search Agent
-    once its public interface is finalized.
     """
 
     query = state.get("user_query", "").strip()
@@ -114,10 +111,15 @@ def web_search_node(state: AgentState) -> Dict[str, Any]:
 
     try:
 
-        # Web Search Agent integration will be connected here.
+        response = run_web_search_agent(query)
+
+        final_message = response[
+            "messages"
+        ][-1].content
 
         return {
-            "web_search_result": "",
+            "web_search_result": final_message,
+            "final_response": final_message,
             "selected_agent": "web_search_agent",
             "success": True,
         }
