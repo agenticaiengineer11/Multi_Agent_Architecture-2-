@@ -99,7 +99,7 @@ class CodingTool:
             [
                 (
                     "system",
-                    """
+"""
 You are a senior software architect.
 
 Analyze the user's software development requirement.
@@ -122,7 +122,7 @@ Return ONLY valid JSON.
 
 Use this structure:
 
-{
+{{
     "project_name": "string",
     "purpose": "string",
     "features": [],
@@ -135,8 +135,8 @@ Use this structure:
     "testing_required": true,
     "constraints": [],
     "edge_cases": []
-}
-                    """,
+}}
+""",
                 ),
                 (
                     "human",
