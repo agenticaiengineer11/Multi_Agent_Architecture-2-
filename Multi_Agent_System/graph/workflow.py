@@ -9,11 +9,6 @@ from graph.nodes import (
 
 from graph.state import AgentState
 
-
-# ============================================================
-# ROUTER
-# ============================================================
-
 def route_agent(state: AgentState) -> str:
     """
     Determine the next node based on the router decision.
@@ -38,20 +33,12 @@ def route_agent(state: AgentState) -> str:
     )
 
 
-# ============================================================
-# CREATE WORKFLOW
-# ============================================================
-
 def create_workflow():
     """
     Create and compile the Multi-Agent LangGraph workflow.
     """
 
     workflow = StateGraph(AgentState)
-
-    # ========================================================
-    # ADD NODES
-    # ========================================================
 
     workflow.add_node(
         "router",
@@ -73,18 +60,12 @@ def create_workflow():
         web_search_node,
     )
 
-    # ========================================================
-    # START → ROUTER
-    # ========================================================
 
     workflow.add_edge(
         START,
         "router",
     )
 
-    # ========================================================
-    # ROUTER → SPECIALIST AGENT
-    # ========================================================
 
     workflow.add_conditional_edges(
         "router",
@@ -96,9 +77,6 @@ def create_workflow():
         },
     )
 
-    # ========================================================
-    # SPECIALIST AGENTS → END
-    # ========================================================
 
     workflow.add_edge(
         "rag",
@@ -114,9 +92,5 @@ def create_workflow():
         "web_search",
         END,
     )
-
-    # ========================================================
-    # COMPILE
-    # ========================================================
 
     return workflow.compile()
