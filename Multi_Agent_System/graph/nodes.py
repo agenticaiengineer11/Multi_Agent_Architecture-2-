@@ -146,10 +146,7 @@ def rag_node(state: AgentState) -> Dict[str, Any]:
         }
 
 
-def coding_node(
-    state: AgentState,
-    llm,
-) -> Dict[str, Any]:
+def coding_node(state: AgentState) -> Dict[str, Any]:
     """
     Execute the Coding Agent.
 
@@ -169,7 +166,7 @@ def coding_node(
 
     try:
 
-        coding_agent = create_coding_agent(llm)
+        coding_agent = create_coding_agent(router_model)
 
         result = coding_agent.run(query)
 
