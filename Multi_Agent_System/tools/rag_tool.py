@@ -11,7 +11,7 @@ from rag.retriever import create_retriever
 # Build RAG system
 # ============================================================
 
-PDF_PATH = "data/documents/document.pdf"
+PDF_PATH = "Multi_Agent_System/data/documents/University_Departments_Network_Documentation.pdf"
 
 
 documents = load_pdf(PDF_PATH)
