@@ -7,28 +7,16 @@ from langchain_groq import ChatGroq
 from tools.web_search_tool import web_search
 
 
-# ============================================================
-# Environment
-# ============================================================
-
 load_dotenv(
     Path(__file__).resolve().parents[1] / ".env"
 )
 
 
-# ============================================================
-# Model
-# ============================================================
-
 model = ChatGroq(
-    model="whisper-large-v3",
+    model="openai/gpt-oss-20b",
     temperature=0,
 )
 
-
-# ============================================================
-# System Prompt
-# ============================================================
 
 SYSTEM_PROMPT = """
 You are a professional Web Research Agent.
@@ -50,20 +38,12 @@ Rules:
 """
 
 
-# ============================================================
-# Web Search Agent
-# ============================================================
-
 web_search_agent = create_agent(
     model=model,
     tools=[web_search],
     system_prompt=SYSTEM_PROMPT,
 )
 
-
-# ============================================================
-# Runner
-# ============================================================
 
 def run_web_search_agent(query: str):
     """
@@ -88,10 +68,6 @@ def run_web_search_agent(query: str):
 
     return response
 
-
-# ============================================================
-# CLI TEST
-# ============================================================
 
 if __name__ == "__main__":
 

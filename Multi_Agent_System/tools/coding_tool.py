@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import sys
@@ -46,19 +45,38 @@ class CodingTool:
         self.parser = StrOutputParser()
 
         self.workspace = Path(workspace).resolve()
-        self.workspace.mkdir(parents=True, exist_ok=True)
+        self.workspace.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
-    def _invoke(self, prompt, variables: Dict[str, Any]) -> str:
+    # =========================================================
+    # LLM INVOCATION
+    # =========================================================
+
+    def _invoke(
+        self,
+        prompt,
+        variables: Dict[str, Any],
+    ) -> str:
         """
         Execute an LLM chain and return a cleaned string.
         """
 
         chain = prompt | self.llm | self.parser
 
-        return chain.invoke(variables).strip()
+        return chain.invoke(
+            variables
+        ).strip()
 
+    # =========================================================
+    # JSON PARSER
+    # =========================================================
 
-    def _parse_json(self, response: str) -> Dict[str, Any]:
+    def _parse_json(
+        self,
+        response: str,
+    ) -> Dict[str, Any]:
         """
         Parse JSON returned by the LLM.
 
@@ -85,21 +103,28 @@ class CodingTool:
 
         except json.JSONDecodeError as error:
             raise ValueError(
-                f"LLM returned invalid JSON.\n\nResponse:\n{response}"
+                "LLM returned invalid JSON.\n\n"
+                f"Response:\n{response}"
             ) from error
 
+    # =========================================================
+    # STEP 1 — ANALYZE TASK
+    # =========================================================
 
-    def analyze_task(self, task: str) -> Dict[str, Any]:
+    def analyze_task(
+        self,
+        task: str,
+    ) -> Dict[str, Any]:
         """
-        Convert a natural-language requirement into structured
-        software requirements.
+        Convert a natural-language requirement into
+        structured software requirements.
         """
 
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-"""
+                    """
 You are a senior software architect.
 
 Analyze the user's software development requirement.
@@ -136,7 +161,7 @@ Use this structure:
     "constraints": [],
     "edge_cases": []
 }}
-""",
+                    """,
                 ),
                 (
                     "human",
@@ -151,10 +176,18 @@ USER REQUIREMENT:
 
         response = self._invoke(
             prompt,
-            {"task": task},
+            {
+                "task": task,
+            },
         )
 
-        return self._parse_json(response)
+        return self._parse_json(
+            response
+        )
+
+    # =========================================================
+    # STEP 2 — DESIGN PROJECT
+    # =========================================================
 
     def design_project(
         self,
@@ -199,19 +232,19 @@ Return ONLY valid JSON.
 
 Format:
 
-{
+{{
     "project_name": "string",
     "architecture": "string",
     "entry_point": "string",
     "dependencies": [],
     "directories": [],
     "files": [
-        {
+        {{
             "path": "main.py",
             "purpose": "Application entry point"
-        }
+        }}
     ]
-}
+}}
                     """,
                 ),
                 (
@@ -240,33 +273,51 @@ REQUIREMENT ANALYSIS:
             },
         )
 
-        return self._parse_json(response)
+        return self._parse_json(
+            response
+        )
 
+    # =========================================================
+    # SAFE PATH
+    # =========================================================
 
-    def _safe_path(self, relative_path: str) -> Path:
+    def _safe_path(
+        self,
+        relative_path: str,
+    ) -> Path:
         """
         Ensure the generated path stays inside the workspace.
         """
 
         if not relative_path:
-            raise ValueError("File path cannot be empty.")
+            raise ValueError(
+                "File path cannot be empty."
+            )
 
-        path = Path(relative_path)
+        path = Path(
+            relative_path
+        )
 
         if path.is_absolute():
             raise ValueError(
-                f"Absolute paths are not allowed: {relative_path}"
+                "Absolute paths are not allowed: "
+                f"{relative_path}"
             )
 
         if ".." in path.parts:
             raise ValueError(
-                f"Parent-directory traversal is not allowed: {relative_path}"
+                "Parent-directory traversal is not allowed: "
+                f"{relative_path}"
             )
 
-        destination = (self.workspace / path).resolve()
+        destination = (
+            self.workspace / path
+        ).resolve()
 
         try:
-            destination.relative_to(self.workspace)
+            destination.relative_to(
+                self.workspace
+            )
 
         except ValueError as error:
             raise ValueError(
@@ -274,6 +325,10 @@ REQUIREMENT ANALYSIS:
             ) from error
 
         return destination
+
+    # =========================================================
+    # CREATE DIRECTORIES
+    # =========================================================
 
     def create_directories(
         self,
@@ -284,11 +339,19 @@ REQUIREMENT ANALYSIS:
         """
 
         for directory in directories:
-            directory_path = self._safe_path(directory)
+
+            directory_path = self._safe_path(
+                directory
+            )
+
             directory_path.mkdir(
                 parents=True,
                 exist_ok=True,
             )
+
+    # =========================================================
+    # GENERATE FILE
+    # =========================================================
 
     def generate_file(
         self,
@@ -370,6 +433,10 @@ Generate the complete file.
             },
         )
 
+    # =========================================================
+    # WRITE FILE
+    # =========================================================
+
     def write_file(
         self,
         relative_path: str,
@@ -379,7 +446,9 @@ Generate the complete file.
         Write generated content to a file inside the workspace.
         """
 
-        file_path = self._safe_path(relative_path)
+        file_path = self._safe_path(
+            relative_path
+        )
 
         file_path.parent.mkdir(
             parents=True,
@@ -393,6 +462,9 @@ Generate the complete file.
 
         return str(file_path)
 
+    # =========================================================
+    # GENERATE PROJECT
+    # =========================================================
 
     def generate_project(
         self,
@@ -404,9 +476,13 @@ Generate the complete file.
         Generate every file in the project.
         """
 
-        project_name = architecture["project_name"]
+        project_name = architecture[
+            "project_name"
+        ]
 
-        project_root = self._safe_path(project_name)
+        project_root = self._safe_path(
+            project_name
+        )
 
         project_root.mkdir(
             parents=True,
@@ -415,20 +491,31 @@ Generate the complete file.
 
         generated_files = []
 
-        for file_info in architecture.get("files", []):
+        for file_info in architecture.get(
+            "files",
+            [],
+        ):
 
-            relative_file = file_info["path"]
-            purpose = file_info["purpose"]
+            relative_file = file_info[
+                "path"
+            ]
+
+            purpose = file_info[
+                "purpose"
+            ]
 
             project_relative_path = (
-                Path(project_name) / relative_file
+                Path(project_name)
+                / relative_file
             )
 
             code = self.generate_file(
                 task=task,
                 analysis=analysis,
                 architecture=architecture,
-                file_path=str(project_relative_path),
+                file_path=str(
+                    project_relative_path
+                ),
                 file_purpose=purpose,
             )
 
@@ -439,7 +526,9 @@ Generate the complete file.
 
             generated_files.append(
                 {
-                    "path": str(project_relative_path),
+                    "path": str(
+                        project_relative_path
+                    ),
                     "purpose": purpose,
                     "absolute_path": written_path,
                 }
@@ -447,10 +536,15 @@ Generate the complete file.
 
         return {
             "project_name": project_name,
-            "project_path": str(project_root),
+            "project_path": str(
+                project_root
+            ),
             "files": generated_files,
         }
 
+    # =========================================================
+    # ANALYZE PROJECT
+    # =========================================================
 
     def analyze_project(
         self,
@@ -465,13 +559,18 @@ Generate the complete file.
 
         project_content = {}
 
-        for file_info in generated_project["files"]:
+        for file_info in generated_project[
+            "files"
+        ]:
 
             file_path = Path(
-                file_info["absolute_path"]
+                file_info[
+                    "absolute_path"
+                ]
             )
 
             try:
+
                 content = file_path.read_text(
                     encoding="utf-8"
                 )
@@ -484,7 +583,10 @@ Generate the complete file.
 
                 project_content[
                     file_info["path"]
-                ] = f"Unable to read file: {error}"
+                ] = (
+                    "Unable to read file: "
+                    f"{error}"
+                )
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -508,12 +610,12 @@ Check:
 
 Return ONLY valid JSON:
 
-{
+{{
     "passed": true,
     "score": 0,
     "issues": [],
     "recommendations": []
-}
+}}
                     """,
                 ),
                 (
@@ -558,7 +660,13 @@ GENERATED PROJECT:
             },
         )
 
-        return self._parse_json(response)
+        return self._parse_json(
+            response
+        )
+
+    # =========================================================
+    # FIND ENTRY POINT
+    # =========================================================
 
     def find_entry_point(
         self,
@@ -576,10 +684,12 @@ GENERATED PROJECT:
         if entry_point:
 
             candidate = (
-                project_path / entry_point
+                project_path
+                / entry_point
             ).resolve()
 
             try:
+
                 candidate.relative_to(
                     project_path.resolve()
                 )
@@ -592,8 +702,6 @@ GENERATED PROJECT:
             if candidate.exists():
                 return candidate
 
-        # Common Python fallbacks
-
         for filename in [
             "main.py",
             "app.py",
@@ -601,7 +709,8 @@ GENERATED PROJECT:
         ]:
 
             candidate = (
-                project_path / filename
+                project_path
+                / filename
             )
 
             if candidate.exists():
@@ -611,6 +720,9 @@ GENERATED PROJECT:
             "Could not find a Python entry point."
         )
 
+    # =========================================================
+    # EXECUTE PROJECT
+    # =========================================================
 
     def execute_project(
         self,
@@ -627,7 +739,9 @@ GENERATED PROJECT:
         a Docker sandbox.
         """
 
-        root = Path(project_path).resolve()
+        root = Path(
+            project_path
+        ).resolve()
 
         entry_point = self.find_entry_point(
             root,
@@ -648,7 +762,9 @@ GENERATED PROJECT:
             )
 
             return {
-                "success": result.returncode == 0,
+                "success": (
+                    result.returncode == 0
+                ),
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "return_code": result.returncode,
@@ -659,7 +775,9 @@ GENERATED PROJECT:
             return {
                 "success": False,
                 "stdout": "",
-                "stderr": "Project execution timed out.",
+                "stderr": (
+                    "Project execution timed out."
+                ),
                 "return_code": -1,
             }
 
@@ -671,6 +789,10 @@ GENERATED PROJECT:
                 "stderr": str(error),
                 "return_code": -1,
             }
+
+    # =========================================================
+    # ANALYZE ERROR
+    # =========================================================
 
     def analyze_error(
         self,
@@ -700,12 +822,12 @@ Determine:
 
 Return ONLY valid JSON:
 
-{
+{{
     "root_cause": "string",
     "affected_files": [],
     "problem": "string",
     "fix": "string"
-}
+}}
                     """,
                 ),
                 (
@@ -742,7 +864,13 @@ EXECUTION ERROR:
             },
         )
 
-        return self._parse_json(response)
+        return self._parse_json(
+            response
+        )
+
+    # =========================================================
+    # CORRECT FILE
+    # =========================================================
 
     def correct_file(
         self,
@@ -830,6 +958,10 @@ Return the complete corrected file.
             },
         )
 
+    # =========================================================
+    # FIX PROJECT
+    # =========================================================
+
     def fix_project(
         self,
         task: str,
@@ -874,10 +1006,15 @@ Return the complete corrected file.
                 corrected_code,
             )
 
-            fixed_files.append(relative_path)
+            fixed_files.append(
+                relative_path
+            )
 
         return fixed_files
 
+    # =========================================================
+    # BUILD PROJECT
+    # =========================================================
 
     def build_project(
         self,
@@ -885,22 +1022,18 @@ Return the complete corrected file.
     ) -> Dict[str, Any]:
         """
         Main entry point for the Coding Assistant.
-
-        Example:
-
-            result = coding_tool.build_project(
-                "Create a FastAPI student management API"
-            )
         """
 
         # -----------------------------------------------------
-        # STEP 1 — Understand the requirement
+        # STEP 1 — Understand requirement
         # -----------------------------------------------------
 
-        analysis = self.analyze_task(task)
+        analysis = self.analyze_task(
+            task
+        )
 
         # -----------------------------------------------------
-        # STEP 2 — Design project architecture
+        # STEP 2 — Design architecture
         # -----------------------------------------------------
 
         architecture = self.design_project(
@@ -945,6 +1078,7 @@ Return the complete corrected file.
         # -----------------------------------------------------
 
         attempts = 0
+
         execution_result = None
         error_analysis = None
         fixed_files = []
@@ -966,7 +1100,9 @@ Return the complete corrected file.
             # SUCCESS
             # ---------------------------------------------
 
-            if execution_result["success"]:
+            if execution_result[
+                "success"
+            ]:
 
                 return {
                     "success": True,
@@ -1007,7 +1143,9 @@ Return the complete corrected file.
                 error_analysis=error_analysis,
             )
 
-            fixed_files.extend(corrected)
+            fixed_files.extend(
+                corrected
+            )
 
         # -----------------------------------------------------
         # MAXIMUM ATTEMPTS REACHED
