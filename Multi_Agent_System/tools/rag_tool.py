@@ -1,4 +1,5 @@
 from langchain_core.tools import tool
+from pathlib import Path
 
 from rag.loader import load_pdf
 from rag.splitter import split_documents
@@ -11,7 +12,12 @@ from rag.retriever import create_retriever
 # Build RAG system
 # ============================================================
 
-PDF_PATH = "Multi_Agent_System/data/documents/University_Departments_Network_Documentation.pdf"
+PDF_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "documents"
+    / "University_Departments_Network_Documentation.pdf"
+)
 
 
 documents = load_pdf(PDF_PATH)
