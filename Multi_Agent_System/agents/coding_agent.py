@@ -69,10 +69,6 @@ class CodingAgent:
                 "error": str(error),
             }
 
-    # =========================================================
-    # PROJECT BUILD
-    # =========================================================
-
     def build_project(
         self,
         task: str,
@@ -85,10 +81,6 @@ class CodingAgent:
         """
 
         return self.run(task)
-
-    # =========================================================
-    # RESULT SUMMARY
-    # =========================================================
 
     def get_summary(
         self,
@@ -150,10 +142,6 @@ class CodingAgent:
             f"Execution attempts: {attempts}"
         )
 
-
-# =============================================================
-# FACTORY FUNCTION
-# =============================================================
 
 def create_coding_agent(llm) -> CodingAgent:
     """
