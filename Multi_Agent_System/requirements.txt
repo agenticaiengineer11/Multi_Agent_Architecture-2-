@@ -26,3 +26,6 @@ python-dotenv
 
 # Utilities
 requests
+
+# Professional web interface
+streamlit

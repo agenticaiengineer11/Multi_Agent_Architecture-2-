@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: meta-factory
+    env: docker
+    rootDir: Multi_Agent_System
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
