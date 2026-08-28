@@ -1,5 +1,6 @@
-from langchain_core.tools import tool
 from pathlib import Path
+
+from langchain_core.tools import tool
 
 from rag.loader import load_pdf
 from rag.splitter import split_documents
@@ -8,70 +9,76 @@ from rag.vector_store import create_vector_store
 from rag.retriever import create_retriever
 
 
-# ============================================================
-# Build RAG system
-# ============================================================
-
-PDF_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "data"
-    / "documents"
-    / "University_Departments_Network_Documentation.pdf"
-)
-
-
-documents = load_pdf(PDF_PATH)
-
-chunks = split_documents(documents)
-
-embeddings = create_embeddings()
-
-vector_store = create_vector_store(
-    chunks,
-    embeddings
-)
-
-retriever = create_retriever(
-    vector_store
-)
-
-
-# ============================================================
-# RAG Tool
-# ============================================================
-
-@tool
-def search_pdf(query: str) -> str:
+def build_retriever(pdf_path: str):
     """
-    Search the PDF for information relevant to the user's question.
-    Use this tool when the user asks about information contained
-    in the PDF.
+    Build a RAG retriever dynamically from the PDF
+    provided by the current user/session.
     """
 
-    docs = retriever.invoke(query)
+    pdf_path = Path(pdf_path)
 
-    if not docs:
-
-        return "No relevant information was found in the PDF."
-
-    results = []
-
-    for doc in docs:
-
-        source = doc.metadata.get(
-            "source",
-            "Unknown"
+    if not pdf_path.exists():
+        raise FileNotFoundError(
+            f"PDF file not found: {pdf_path}"
         )
 
-        page = doc.metadata.get(
-            "page",
-            "Unknown"
-        )
+    documents = load_pdf(str(pdf_path))
 
-        results.append(
-            f"Source: {source}\n"
-            f"Page: {page}\n"
-            f"Content: {doc.page_content}"
-        )
+    chunks = split_documents(documents)
 
-    return "\n\n".join(results)
+    embeddings = create_embeddings()
+
+    vector_store = create_vector_store(
+        chunks,
+        embeddings
+    )
+
+    return create_retriever(vector_store)
+
+
+def create_search_pdf_tool(pdf_path: str):
+    """
+    Create a search_pdf tool connected specifically
+    to the user's uploaded PDF.
+    """
+
+    retriever = build_retriever(pdf_path)
+
+    @tool
+    def search_pdf(query: str) -> str:
+        """
+        Search the user's uploaded PDF for information
+        relevant to the user's question.
+        """
+
+        docs = retriever.invoke(query)
+
+        if not docs:
+            return (
+                "No relevant information was found "
+                "in the uploaded PDF."
+            )
+
+        results = []
+
+        for doc in docs:
+
+            source = doc.metadata.get(
+                "source",
+                "Unknown"
+            )
+
+            page = doc.metadata.get(
+                "page",
+                "Unknown"
+            )
+
+            results.append(
+                f"Source: {source}\n"
+                f"Page: {page}\n"
+                f"Content: {doc.page_content}"
+            )
+
+        return "\n\n".join(results)
+
+    return search_pdf

@@ -51,7 +51,7 @@ Available agents:
 
 1. rag
    Use when the question requires information from the
-   provided University PDF/document.
+   PDF/document uploaded by the user.
 
 2. coding
    Use when the user wants to create, modify, debug,
@@ -108,14 +108,12 @@ web_search
 
 def rag_node(state: AgentState) -> Dict[str, Any]:
     """
-    Execute the RAG Agent.
-
-    The node receives the user's query from the shared state,
-    sends it to the RAG Agent, and stores the final response
-    in the graph state.
+    Execute the RAG Agent using the PDF uploaded
+    for the current task.
     """
 
     query = state.get("user_query", "").strip()
+    pdf_path = state.get("pdf_path")
 
     if not query:
         return {
@@ -124,10 +122,23 @@ def rag_node(state: AgentState) -> Dict[str, Any]:
             "success": False,
         }
 
-    try:
-        response = run_rag_agent(query)
+    if not pdf_path:
+        return {
+            "rag_result": "",
+            "error": "Please upload a PDF document before using the RAG agent.",
+            "success": False,
+        }
 
-        final_message = response["messages"][-1].content
+    try:
+
+        response = run_rag_agent(
+            query,
+            pdf_path
+        )
+
+        final_message = response[
+            "messages"
+        ][-1].content
 
         return {
             "rag_result": final_message,
@@ -144,7 +155,6 @@ def rag_node(state: AgentState) -> Dict[str, Any]:
             "errors": [str(error)],
             "success": False,
         }
-
 
 def coding_node(state: AgentState) -> Dict[str, Any]:
     """

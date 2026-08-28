@@ -4,10 +4,13 @@ from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_groq import ChatGroq
 
-from tools.rag_tool import search_pdf
+from tools.rag_tool import create_search_pdf_tool
 
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+load_dotenv(
+    Path(__file__).resolve().parents[1] / ".env"
+)
+
 
 model = ChatGroq(
     model="openai/gpt-oss-20b",
@@ -16,52 +19,49 @@ model = ChatGroq(
 
 
 SYSTEM_PROMPT = """
-You are a specialized RAG Agent.
+You are a general-purpose PDF question-answering agent.
 
-Your responsibility is to answer questions using information
-retrieved from the provided PDF document.
+The user has provided a PDF document for this task.
 
 Rules:
 
 1. Use the search_pdf tool whenever the user's question
-   requires information from the PDF.
+   requires information from the uploaded PDF.
 
-2. Do not invent information that is not supported by the
-   retrieved document.
+2. Answer using information retrieved from the uploaded PDF.
 
-3. Base your answer primarily on the retrieved PDF content.
+3. Do not invent information that is not supported by
+   the uploaded PDF.
 
-4. If the PDF does not contain relevant information, clearly
-   state that the required information was not found.
+4. If the requested information cannot be found in the
+   uploaded PDF, clearly say that it was not found.
 
-5. When possible, mention the source page from the retrieved
-   information.
+5. Do not assume that the document is about any particular
+   subject or organization.
 
-6. Give concise but complete answers.
+6. Treat the currently uploaded PDF as the only document
+   knowledge source for this task.
 
-7. If the user asks something unrelated to the PDF, explain
-   that you are the specialized RAG agent and are designed
-   primarily for document-based questions.
+7. When possible, mention the source page.
+
+8. Give concise but complete answers.
 """
 
-rag_agent = create_agent(
-    model=model,
-    tools=[search_pdf],
-    system_prompt=SYSTEM_PROMPT
-)
+
+def create_rag_agent(pdf_path: str):
+
+    search_pdf = create_search_pdf_tool(pdf_path)
+
+    return create_agent(
+        model=model,
+        tools=[search_pdf],
+        system_prompt=SYSTEM_PROMPT
+    )
 
 
+def run_rag_agent(query: str, pdf_path: str):
 
-def run_rag_agent(query: str):
-    """
-    Run the RAG agent with a user query.
-
-    Args:
-        query: User's question.
-
-    Returns:
-        Agent response.
-    """
+    rag_agent = create_rag_agent(pdf_path)
 
     response = rag_agent.invoke(
         {
@@ -75,21 +75,3 @@ def run_rag_agent(query: str):
     )
 
     return response
-if __name__ == "__main__":
-
-    print("RAG Agent started.")
-    print("Type 'exit' to quit.\n")
-
-    while True:
-
-        query = input("You: ")
-
-        if query.lower() == "exit":
-            print("RAG Agent stopped.")
-            break
-
-        response = run_rag_agent(query)
-
-        print("\nRAG Agent:")
-        print(response["messages"][-1].content)
-        print()

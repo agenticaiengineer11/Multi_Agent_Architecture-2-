@@ -80,7 +80,11 @@ def initial_state() -> None:
     st.session_state.setdefault("active_view", "workspace")
 
 
-def execute_query(query: str) -> dict[str, Any]:
+def execute_query(
+    query: str,
+    pdf_path: str | None = None
+) -> dict[str, Any]:
+
     from graph.workflow import create_workflow
 
     state = {
@@ -94,9 +98,10 @@ def execute_query(query: str) -> dict[str, Any]:
         "error": None,
         "errors": [],
         "metadata": {},
+        "pdf_path": pdf_path,
     }
-    return create_workflow().invoke(state)
 
+    return create_workflow().invoke(state)
 
 def render_sidebar() -> None:
     with st.sidebar:
@@ -178,10 +183,29 @@ def main() -> None:
             st.markdown('<div class="run-button">', unsafe_allow_html=True)
             submitted = st.form_submit_button("Run task  →", use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
+    uploaded_pdf_path = None
+
     if uploaded:
-        DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
-        (DOCUMENTS_DIR / uploaded.name).write_bytes(uploaded.getbuffer())
-        st.caption(f"Attached: {uploaded.name}")
+        DOCUMENTS_DIR.mkdir(
+            parents=True,
+            exist_ok=True
+    )
+
+    uploaded_pdf_path = (
+        DOCUMENTS_DIR / uploaded.name
+    )
+
+    uploaded_pdf_path.write_bytes(
+        uploaded.getbuffer()
+    )
+
+    st.session_state["uploaded_pdf_path"] = str(
+        uploaded_pdf_path
+    )
+
+    st.caption(
+        f"Attached: {uploaded.name}"
+    )
 
     if submitted:
         if not query.strip():
@@ -190,7 +214,9 @@ def main() -> None:
             with st.spinner("Agents are collaborating on your request..."):
                 started = time.perf_counter()
                 try:
-                    result = execute_query(query.strip())
+                    pdf_path = st.session_state.get("uploaded_pdf_path")
+
+                    result = execute_query(query.strip(),pdf_path)
                     result["_duration"] = round(time.perf_counter() - started, 2)
                     st.session_state.last_result = result
                     st.session_state.history.insert(0, {"query": query.strip(), "result": result, "at": datetime.now().isoformat(timespec="minutes")})

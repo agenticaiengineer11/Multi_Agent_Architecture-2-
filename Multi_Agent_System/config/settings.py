@@ -32,11 +32,6 @@ DOCUMENTS_DIR = (
     / "documents"
 )
 
-RAG_DOCUMENT = (
-    DOCUMENTS_DIR
-    / "University_Departments_Network_Documentation.pdf"
-)
-
 GENERATED_PROJECTS_DIR = (
     BASE_DIR
     / "generated_projects"

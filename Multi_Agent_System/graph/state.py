@@ -11,6 +11,9 @@ class AgentState(TypedDict, total=False):
     # User request
     user_query: str
 
+    # Uploaded PDF for the current task
+    pdf_path: Optional[str]
+
     # Agent selected by the router
     selected_agent: Optional[str]
 
